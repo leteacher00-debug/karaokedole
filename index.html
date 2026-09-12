@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaokê do Lê com Pontuação & Token</title>
+    <style>
+        body { font-family: sans-serif; background: #000; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        .screen { display: none; }
+        .active { display: block; }
+        button { padding: 12px 24px; background: #e50914; color: #fff; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; margin: 10px; }
+        #screen-tv { width: 100vw; height: 100vh; background: #000; position: fixed; top: 0; left: 0; }
+        #player-container, iframe { width: 100%; height: 100%; border: none; }
+        input { padding: 12px; border: none; border-radius: 5px; font-size: 16px; width: 80%; max-width: 400px; background: #222; color: #fff; text-align: center; }
+        .info-box { background: #111; border: 1px solid #e50914; padding: 10px; border-radius: 8px; margin: 10px auto; max-width: 450px; text-align: left; font-size: 12px; color: #ccc; }
+        .track-item { padding: 10px; background: #222; margin: 5px auto; border-radius: 5px; max-width: 450px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .channel-tag { font-size: 11px; color: #e50914; display: block; }
+        .cantor-tag { font-size: 12px; color: #00ffcc; font-weight: bold; display: block; margin-top: 3px; }
+        
+        /* Token Badge na TV */
+        #token-tv-badge {
+            position: absolute; top: 15px; left: 15px; z-index: 1000;
+            background: rgba(0,0,0,0.7); border: 1px solid #e50914; padding: 8px 15px;
+            border-radius: 20px; font-size: 14px; color: #00ffcc; font-weight: bold;
+        }
+
+        /* Marca D'água do Próximo Cantor na TV */
+        #proximo-cantor-watermark {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 2000;
+            background: rgba(0, 0, 0, 0.5); color: rgba(255, 255, 255, 0.85);
+            padding: 10px 25px; border-radius: 30px; font-size: 22px; font-weight: bold;
+            border: 1px solid rgba(0, 255, 204, 0.4); display: none; text-shadow: 0 0 10px #000;
+            pointer-events: none;
+        }
+
+        /* Placar de fim de música */
+        #placar-overlay { 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(0,0,0,0.85); color: #00ffcc; 
+            display: none; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 9999; padding: 20px; box-sizing: border-box;
+        }
+        #placar-overlay h1 { font-size: 48px; margin-bottom: 10px; color: #fff; }
+        #placar-overlay .score { font-size: 96px; font-weight: bold; text-shadow: 0 0 20px #00ffcc; margin: 0; }
+        #frase-val { font-size: 28px; color: #ffeb3b; margin-top: 15px; font-weight: bold; text-shadow: 0 0 10px rgba(255,235,59,0.5); }
+        
+        #btn-mic { position: absolute; bottom: 20px; right: 20px; z-index: 1000; opacity: 0.7; }
+        
+        .admin-card { background: #181818; border: 1px solid #333; padding: 20px; border-radius: 10px; max-width: 400px; margin: 20px auto; }
+        .token-display { font-size: 36px; font-weight: bold; color: #00ffcc; letter-spacing: 4px; margin: 15px 0; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div id="screen-select" class="screen active">
+        <h1>🎙️ Karaokê do Lê</h1>
+        <p>Digite o Token/Senha para acessar:</p>
+        <input type="password" id="senha-app" placeholder="Token..."><br><br>
+        <button onclick="validarEIniciar('tv')">💻 Projetor / PC</button>
+        <button onclick="validarEIniciar('controle')">📱 Celular (Controle)</button>
+        <br><br>
+        <button style="background: #333; font-size: 12px; padding: 8px 16px;" onclick="abrirAdmin()">🔑 Painel do Admin</button>
+        <p id="erro-senha" style="color: #ff3333; display: none; margin-top: 15px;">🔒 Token incorreto!</p>
+    </div>
+
+    <!-- Tela do Projetor / TV -->
+    <div id="screen-tv" class="screen">
+        <div id="token-tv-badge">🔑 Token: <span id="tv-token-val">----</span></div>
+        <div id="proximo-cantor-watermark">🎤 Próximo(a) a cantar: <span id="nome-proximo-val" style="color: #00ffcc;">-</span></div>
+        
+        <div id="placar-overlay">
+            <h1>FIM DA MÚSICA!</h1>
+            <p>Pontuação do Cantor:</p>
+            <div class="score" id="score-val">0</div>
+            <div id="frase-val">...</div>
+            <p style="font-size: 18px; color: #aaa; margin-top: 30px;">Aguarde a próxima música...</p>
+        </div>
+        <button id="btn-mic" onclick="ativarMicrofone()">🎙️ Ativar Microfone</button>
+        <div id="player-container">
+            <div id="player"></div>
+        </div>
+    </div>
+
+    <!-- Tela de Controle Remoto (Celular do Convidado) -->
+    <div id="screen-remote" class="screen">
+        <h2>📱 Controle - Karaokê do Lê</h2>
+        <div class="info-box">
+            <strong>⭐ Canais Recomendados:</strong> Sfalsin, Sua Voz e Violão, Ponto do Karaokê 2, CC Karaoke, Sing King, KaraFun, Party Tyme, ObsKure, Funbox, Caritas, The Proper Volume, Scream Queen.
+        </div>
+        
+        <input type="text" id="cantor-nome" placeholder="👤 Seu Nome (Cantor)" style="border: 1px solid #e50914; margin-bottom: 10px;"><br>
+        <input type="text" id="query" placeholder="Música ou artista..."><br>
+        <button onclick="buscar()">Pesquisar</button>
+        <button style="background:#555;" onclick="comando('play')">▶️</button>
+        <button style="background:#555;" onclick="comando('pause')">⏸️</button>
+        <button onclick="comando('proxima')">⏭️ Pular</button>
+        <h3>Resultados da Busca</h3>
+        <div id="resultados"></div>
+        <hr>
+        <h3>Fila Atual</h3>
+        <div id="fila"></div>
+    </div>
+
+    <!-- Painel do Administrador (Lê) -->
+    <div id="screen-admin" class="screen">
+        <h2>🔑 Gerenciador de Token</h2>
+        <div class="admin-card">
+            <p style="color: #aaa; margin: 0;">Token Atual em Uso:</p>
+            <div class="token-display" id="admin-token-atual">----</div>
+            <button style="background: #28a745; width: 100%; font-size: 16px;" onclick="gerarNovoToken()">🎲 Gerar Novo Token Aleatório</button>
+            <hr style="border-color: #333; margin: 20px 0;">
+            <p style="font-size: 14px;">Ou defina uma senha manual:</p>
+            <input type="text" id="token-manual" placeholder="Ex: 2026" style="width: 70%;"><br>
+            <button style="background: #007bff;" onclick="definirTokenManual()">Salvar Token Manual</button>
+        </div>
+        <button style="background: #555;" onclick="mudarTela('screen-select')">⬅️ Voltar</button>
+    </div>
+
+    <script>
+        var config = {
+            apiKey: "AIzaSyCCBovYrOkioqZdMz4nT7dwGhP4FOnDSxw",
+            authDomain: "meu-karaoke-630dc.firebaseapp.com",
+            databaseURL: "https://meu-karaoke-630dc-default-rtdb.firebaseio.com",
+            projectId: "meu-karaoke-630dc",
+            storageBucket: "meu-karaoke-630dc.firebasestorage.app",
+            messagingSenderId: "215343934807",
+            appId: "1:215343934807:web:a40df33c20d5d37d726212"
+        };
+        
+        firebase.initializeApp(config);
+        var db = firebase.database();
+        
+        var KEY = 'AIzaSyDhjvGcAUY7UrD2pgbvvJX00Ud_3x7mDsc';
+        var player, filaIds = [], atualId = null;
+        var tentandoFallback = false;
+        var exibindoPlacar = false;
+        var senhaCadastrada = "1234";
+
+        var audioCtx, analyser, micStream;
+        var pontuacaoAcumulada = 0, amostrasAudio = 0, totalLeituras = 0;
+        var analisandoAudio = false;
+        var timerProgresso = null;
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tv') === 'true') {
+                iniciarTela();
+            }
+        });
+
+        db.ref('karaoke/senha').on('value', function(snapshot) {
+            var val = snapshot.val();
+            if (val) {
+                senhaCadastrada = val.toString();
+            } else {
+                senhaCadastrada = "1234";
+                db.ref('karaoke/senha').set("1234");
+            }
+            document.getElementById('admin-token-atual').innerText = senhaCadastrada;
+            document.getElementById('tv-token-val').innerText = senhaCadastrada;
+        });
+
+        function validarEIniciar(tipo) {
+            var inputSenha = document.getElementById('senha-app').value;
+            var erroEl = document.getElementById('erro-senha');
+
+            if (inputSenha === senhaCadastrada) {
+                erroEl.style.display = 'none';
+                if (tipo === 'tv') iniciarTela();
+                else if (tipo === 'controle') iniciarControle();
+            } else {
+                erroEl.style.display = 'block';
+            }
+        }
+
+        function abrirAdmin() {
+            var m = prompt("Digite a Senha Mestra de Administrador:");
+            if (m === "admin202326") {
+                mudarTela('screen-admin');
+            } else if(m !== null) {
+                alert("Senha Mestra Incorreta!");
+            }
+        }
+
+        function gerarNovoToken() {
+            var novoToken = Math.floor(1000 + Math.random() * 9000).toString();
+            db.ref('karaoke/senha').set(novoToken);
+            alert("Novo Token gerado e ativado: " + novoToken);
+        }
+
+        function definirTokenManual() {
+            var t = document.getElementById('token-manual').value.trim();
+            if (t) {
+                db.ref('karaoke/senha').set(t);
+                document.getElementById('token-manual').value = '';
+                alert("Token definido para: " + t);
+            }
+        }
+
+        function ativarMicrofone() {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(function(stream) {
+                    micStream = stream;
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioCtx.createAnalyser();
+                    var source = audioCtx.createMediaStreamSource(stream);
+                    source.connect(analyser);
+                    
+                    document.getElementById('btn-mic').innerText = "🎙️ Mic Conectado!";
+                    document.getElementById('btn-mic').style.background = "#28a745";
+                    iniciarProcessamentoAudio();
+                })
+                .catch(function() {
+                    alert("Erro ao acessar o microfone.");
+                });
+        }
+
+        function iniciarProcessamentoAudio() {
+            analisandoAudio = true;
+            var dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            function processar() {
+                if (!analisandoAudio) return;
+                analyser.getByteFrequencyData(dataArray);
+                
+                var soma = 0;
+                for (var i = 0; i < dataArray.length; i++) soma += dataArray[i];
+                var mediaVolume = soma / dataArray.length;
+                
+                totalLeituras++;
+
+                if (mediaVolume > 25) {
+                    pontuacaoAcumulada += Math.min((mediaVolume - 20) * 1.5, 100);
+                    amostrasAudio++;
+                }
+                requestAnimationFrame(processar);
+            }
+            processar();
+        }
+
+        function calcularNotaFinal() {
+            if (amostrasAudio === 0 || (amostrasAudio / totalLeituras) < 0.05) {
+                pontuacaoAcumulada = 0;
+                amostrasAudio = 0;
+                totalLeituras = 0;
+                return 0;
+            }
+            
+            var mediaFinal = pontuacaoAcumulada / amostrasAudio;
+            var percentualConstancia = Math.min(amostrasAudio / (totalLeituras * 0.4), 1);
+            var nota = Math.min(Math.floor(mediaFinal * percentualConstancia * 1.3), 100);
+            
+            pontuacaoAcumulada = 0;
+            amostrasAudio = 0;
+            totalLeituras = 0;
+            return Math.max(nota, 0);
+        }
+
+        function obterFrasePorNota(nota) {
+            if (nota === 0) {
+                return "Canta aí, pô! O mic tá desligado?";
+            } else if (nota <= 40) {
+                return "Clap....Clap....Clap...";
+            } else if (nota <= 60) {
+                return "Tá ótimo pro chuveiro!";
+            } else if (nota <= 75) {
+                return "Olhaa! Vejo um futuro na carreira!";
+            } else if (nota <= 90) {
+                return "Sambou na cara da sociedade!";
+            } else {
+                return "AHAZOOOU VINHAAAAADOO!!!";
+            }
+        }
+
+        function exibirNotaEAvancar() {
+            if (exibindoPlacar) return;
+            exibindoPlacar = true;
+
+            esconderMarcaDagua();
+
+            var nota = calcularNotaFinal();
+            var frase = obterFrasePorNota(nota);
+
+            document.getElementById('score-val').innerText = nota + " PTS";
+            document.getElementById('frase-val').innerText = frase;
+            document.getElementById('placar-overlay').style.display = 'flex';
+
+            setTimeout(function() {
+                document.getElementById('placar-overlay').style.display = 'none';
+                exibindoPlacar = false;
+                pular();
+            }, 5000);
+        }
+
+        function mudarTela(id) {
+            document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+            document.getElementById(id).classList.add('active');
+        }
+
+        function checarProgressoVideo() {
+            if (!player || typeof player.getCurrentTime !== 'function' || typeof player.getDuration !== 'function') return;
+            
+            var tempoAtual = player.getCurrentTime();
+            var duracaoTotal = player.getDuration();
+
+            if (duracaoTotal > 0 && (tempoAtual / duracaoTotal) >= 0.5) {
+                if (filaIds.length > 1) {
+                    var proximo = filaIds[1];
+                    var nomeCantor = proximo.cantor ? proximo.cantor : "Convidado";
+                    document.getElementById('nome-proximo-val').innerText = nomeCantor;
+                    document.getElementById('proximo-cantor-watermark').style.display = 'block';
+                }
+            } else {
+                esconderMarcaDagua();
+            }
+        }
+
+        function esconderMarcaDagua() {
+            document.getElementById('proximo-cantor-watermark').style.display = 'none';
+        }
+
+        window.iniciarTela = function() {
+            mudarTela('screen-tv');
+            
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.body.appendChild(tag);
+
+            window.onYouTubeIframeAPIReady = function() {
+                player = new YT.Player('player', {
+                    playerVars: { 'autoplay': 1, 'controls': 1 },
+                    events: { 
+                        'onStateChange': function(e) { 
+                            if(e.data === 1) {
+                                if(!timerProgresso) timerProgresso = setInterval(checarProgressoVideo, 1000);
+                            } else if(e.data === 0) {
+                                clearInterval(timerProgresso);
+                                timerProgresso = null;
+                                exibirNotaEAvancar();
+                            } else {
+                                clearInterval(timerProgresso);
+                                timerProgresso = null;
+                            }
+                        },
+                        'onError': function() {
+                            tratarErroReproducao();
+                        }
+                    }
+                });
+            };
+
+            db.ref('karaoke/fila').on('value', function(s) {
+                if (exibindoPlacar) return;
+
+                filaIds = []; 
+                var data = s.val(); 
+                if(!data) { 
+                    atualId = null; 
+                    tentandoFallback = false;
+                    esconderMarcaDagua();
+                    if(player && player.stopVideo) player.stopVideo(); 
+                    return; 
+                }
+                
+                Object.keys(data).forEach(function(k){ 
+                    filaIds.push({ k: k, id: data[k].id, titulo: data[k].titulo, cantor: data[k].cantor }); 
+                });
+
+                if(filaIds.length > 0 && player && player.loadVideoById && atualId !== filaIds[0].id) {
+                    atualId = filaIds[0].id; 
+                    tentandoFallback = false;
+                    esconderMarcaDagua();
+                    player.loadVideoById(atualId);
+                }
+            });
+
+            db.ref('karaoke/comando').on('value', function(s) {
+                var c = s.val(); 
+                if(!c || !player) return;
+                if(c === 'play' && player.playVideo) player.playVideo(); 
+                if(c === 'pause' && player.pauseVideo) player.pauseVideo(); 
+                if(c === 'proxima') pular();
+                db.ref('karaoke/comando').set(null);
+            });
+        };
+
+        function tratarErroReproducao() {
+            if (filaIds.length === 0) return;
+            var itemAtual = filaIds[0];
+            
+            if (!tentandoFallback && itemAtual && itemAtual.titulo) {
+                tentandoFallback = true;
+                
+                var termoBusca = itemAtual.titulo.replace(/karaoke/gi, "").trim();
+                var queryEstudio = termoBusca + " studio backing track OR sfalsin OR 'ponto do karaoke' OR 'sing king' -midi";
+                
+                var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryEstudio) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + KEY;
+                
+                fetch(url)
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){
+                        if (data.items && data.items.length > 0) {
+                            var novoId = data.items[0].id.videoId;
+                            if (novoId !== atualId) {
+                                atualId = novoId;
+                                player.loadVideoById(novoId);
+                                return;
+                            }
+                        }
+                        pular();
+                    })
+                    .catch(function(){ pular(); });
+            } else {
+                pular();
+            }
+        }
+
+        window.iniciarControle = function() {
+            mudarTela('screen-remote');
+            db.ref('karaoke/fila').on('value', function(s) {
+                var d = s.val(); 
+                var fDiv = document.getElementById('fila'); 
+                fDiv.innerHTML = ''; 
+                if(!d) return;
+
+                Object.keys(d).forEach(function(k){
+                    var cantorStr = d[k].cantor ? "👤 " + d[k].cantor : "👤 Não informado";
+                    fDiv.innerHTML += "<div class='track-item'><div><span>" + d[k].titulo + "</span><span class='cantor-tag'>" + cantorStr + "</span></div><button style='background:#555;' onclick=\"window.excluir('" + k + "')\">🗑️</button></div>";
+                });
+            });
+        };
+
+        window.buscar = function() {
+            var q = document.getElementById('query').value; 
+            var rDiv = document.getElementById('resultados'); 
+            if(!q) return;
+            rDiv.innerHTML = 'Buscando...';
+            
+            var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(q + ' karaoke') + "&type=video&maxResults=10&key=" + KEY;
+            
+            fetch(url)
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    rDiv.innerHTML = '';
+                    if(!data.items || data.items.length === 0) {
+                        rDiv.innerHTML = 'Nenhum resultado encontrado ou cota excedida.';
+                        return;
+                    }
+                    data.items.forEach(function(i){
+                        var tSeguro = i.snippet.title.replace(/'/g, "").replace(/"/g, "");
+                        rDiv.innerHTML += "<div class='track-item'><div><span>" + i.snippet.title + "</span><span class='channel-tag'>📺 " + i.snippet.channelTitle + "</span></div><button onclick=\"window.add('" + i.id.videoId + "','" + tSeguro + "')\">+</button></div>";
+                    });
+                })
+                .catch(function(){
+                    rDiv.innerHTML = 'Erro ao realizar a busca.';
+                });
+        };
+
+        window.add = function(id, titulo) { 
+            var nomeInput = document.getElementById('cantor-nome').value.trim();
+            var nomeCantor = nomeInput !== "" ? nomeInput : "Anônimo";
+            db.ref('karaoke/fila').push({ id: id, titulo: titulo, cantor: nomeCantor }); 
+        };
+
+        window.comando = function(t) { 
+            db.ref('karaoke/comando').set(t); 
+        };
+
+        window.excluir = function(k) { 
+            db.ref('karaoke/fila/' + k).remove(); 
+        };
+
+        function pular() { 
+            tentandoFallback = false;
+            esconderMarcaDagua();
+            if(filaIds.length > 0) { 
+                db.ref('karaoke/fila/' + filaIds[0].k).remove(); 
+            } 
+        }
+    </script>
+</body>
+</html>
