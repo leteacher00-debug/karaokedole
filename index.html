@@ -3,279 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaokê do Lê</title>
-    <!-- Firebase App & Database (v8) -->
+    <title>Karaokê do Lê - Sistema Completo</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-        :root {
-            --bg-color: #0f0f1a;
-            --card-bg: #1a1a2e;
-            --accent: #ff0055;
-            --accent-hq: #00ffcc;
-            --text: #ffffff;
-            --subtext: #a0a0b0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        h1 {
-            text-align: center;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 10px;
-        }
-
-        input {
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background: #0f0f1a;
-            color: #fff;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            background: var(--accent);
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            transition: opacity 0.2s;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-        }
-
-        .track-item {
-            background: var(--card-bg);
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .track-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-width: 70%;
-        }
-
-        .channel-tag {
-            font-size: 12px;
-            color: var(--subtext);
-        }
-
-        .hq-tag {
-            color: var(--accent-hq);
-            font-weight: bold;
-        }
+        :root { --bg: #0b0b14; --card: #161626; --accent: #ff0055; --accent-hover: #ff2a75; --text: #fff; --muted: #aaa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 15px; }
+        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #282845; }
+        h1, h2, h3 { text-align: center; margin-bottom: 10px; color: var(--text); }
+        input, button { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; font-size: 16px; margin-top: 8px; }
+        input { background: #000; color: #fff; border-color: #444; }
+        button { background: var(--accent); color: #fff; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--accent-hover); }
+        .btn-secondary { background: #333; }
+        .btn-secondary:hover { background: #444; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .track-item { background: #0f0f1d; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #222; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
+        /* Player Projetor Fullscreen */
+        #view-player { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 100; display: none; }
+        #yt-embed { width: 100%; height: 100%; border: none; }
+        #player-overlay { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.85); padding: 15px 25px; border-radius: 10px; border-left: 5px solid var(--accent); z-index: 110; }
+        #token-badge { position: absolute; top: 20px; right: 20px; background: var(--accent); padding: 8px 15px; border-radius: 6px; font-weight: bold; z-index: 110; }
+        #btn-sair-player { position: absolute; top: 20px; left: 20px; z-index: 110; background: rgba(0,0,0,0.6); width: auto; padding: 8px 15px; font-size: 14px; }
+        
+        .escondido { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <!-- 1. TELA INICIAL / SELEÇÃO DE MODO -->
+    <div id="view-inicio" class="container">
         <h1>🎤 Karaokê do Lê</h1>
+        <div class="card">
+            <h3>Conectar à Sala</h3>
+            <input type="text" id="token-input" placeholder="Digite o Token/Senha da Sala (ex: LEKARAOKE)" value="LEKARAOKE">
+            
+            <p style="text-align: center; margin: 15px 0 5px; color: var(--muted); font-size: 14px;">Selecione como quer usar este aparelho:</p>
+            
+            <div class="grid-2">
+                <button onclick="abrirModo('player')">📺 Projetor / TV</button>
+                <button onclick="abrirModo('controle')">📱 Controle / Pedir</button>
+            </div>
+            <button onclick="abrirModo('adm')" class="btn-secondary" style="margin-top: 10px;">⚙️ Área do Administrador</button>
+        </div>
+    </div>
 
-        <div class="input-group">
+    <!-- 2. TELA DO PLAYER (PROJETOR / TV) -->
+    <div id="view-player">
+        <button id="btn-sair-player" onclick="voltarInicio()">⬅️ Sair do Player</button>
+        <div id="token-badge">SALA: <span class="lbl-token"></span></div>
+        <div id="yt-embed"></div>
+        <div id="player-overlay">
+            <div id="proximo-cantar">Aguardando músicas na fila...</div>
+        </div>
+    </div>
+
+    <!-- 3. TELA DO CONTROLE (CELULAR DOS CONVIDADOS) -->
+    <div id="view-controle" class="container escondido">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button onclick="voltarInicio()" class="btn-secondary" style="width: auto; padding: 6px 12px; font-size: 14px;">⬅️ Trocar Sala</button>
+            <span>Sala: <b class="lbl-token" style="color: var(--accent);"></b></span>
+        </div>
+
+        <div class="card">
+            <h3>Fazer um Pedido</h3>
             <input type="text" id="cantor-nome" placeholder="Seu Nome (Cantor)" required>
-            <input type="text" id="busca-termo" placeholder="Nome da música ou artista">
-            <button onclick="window.buscar()">🔍 Buscar Música</button>
+            <input type="text" id="busca-termo" placeholder="Música ou artista">
+            <button onclick="buscarYoutube()">🔍 Buscar Vídeo</button>
         </div>
 
-        <div class="controls">
-            <button onclick="comando('play')">▶️ Play</button>
-            <button onclick="comando('pause')">⏸️ Pause</button>
-            <button onclick="pular()">⏭️ Pular</button>
+        <div class="card">
+            <h3>Resultados da Busca</h3>
+            <div id="resultados-busca"><p style="color: var(--muted); font-size: 14px; text-align: center;">Busque uma música acima...</p></div>
         </div>
 
-        <h3>Resultados da Busca</h3>
-        <div id="resultados"></div>
+        <div class="card">
+            <h3>🎵 Fila de Espera</h3>
+            <div id="fila-espera"></div>
+        </div>
+    </div>
 
-        <h3>Fila de Espera</h3>
-        <div id="fila"></div>
+    <!-- 4. TELA ÁREA DE ADM (CONTROLE MASTER) -->
+    <div id="view-adm" class="container escondido">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button onclick="voltarInicio()" class="btn-secondary" style="width: auto; padding: 6px 12px; font-size: 14px;">⬅️ Sair da ADM</button>
+            <span>ADM Sala: <b class="lbl-token" style="color: var(--accent);"></b></span>
+        </div>
+
+        <div class="card">
+            <h3>🎮 Comandos da TV</h3>
+            <div class="grid-3">
+                <button onclick="enviarComando('play')">▶️ Play</button>
+                <button onclick="enviarComando('pause')">⏸️ Pause</button>
+                <button onclick="pularMusicaAtual()">⏭️ Pular</button>
+            </div>
+            <button onclick="limparFilaToda()" class="btn-secondary" style="margin-top: 10px; background: #880000;">🗑️ Limpar Fila Toda</button>
+        </div>
+
+        <div class="card">
+            <h3>Gerenciar Fila</h3>
+            <div id="fila-adm"></div>
+        </div>
     </div>
 
     <script>
-        // Configuração do Firebase
+        // CONFIGURAÇÃO DO FIREBASE
         var firebaseConfig = {
             apiKey: "SUA_API_KEY_FIREBASE",
             authDomain: "SEU_PROJECT_ID.firebaseapp.com",
             databaseURL: "https://SEU_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "SEU_PROJECT_ID",
-            storageBucket: "SEU_PROJECT_ID.appspot.com",
-            messagingSenderId: "SEU_SENDER_ID",
-            appId: "SEU_APP_ID"
+            projectId: "SEU_PROJECT_ID"
         };
-        
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // Chaves da API do YouTube (Principal e Reserva)
+        // CHAVES YOUTUBE (Com Fallback)
         var ytKeys = ["SUA_CHAVE_YOUTUBE_PRINCIPAL", "SUA_CHAVE_YOUTUBE_RESERVA"];
         var keyIndex = 0;
+        var canalHQList = ["sing king", "kantoake", "poptified", "karaokê oficial", "música e letra"];
 
-        // Lista de canais prioritários de alta qualidade
-        var listaCanaisHQ = [
-            "sing king",
-            "kantoake",
-            "poptified",
-            "karaokê oficial",
-            "música e letra"
-        ];
+        var tokenGlobal = "";
+        var player;
+        var musicaAtualKey = null;
 
-        // Atualização da fila em tempo real
-        db.ref('karaoke/fila').on('value', function(snapshot) {
-            var fDiv = document.getElementById('fila');
-            fDiv.innerHTML = '';
-            var data = snapshot.val();
-            if (data) {
-                Object.keys(data).forEach(function(key) {
-                    var item = data[key];
-                    fDiv.innerHTML += "<div class='track-item'>" +
-                        "<div class='track-info'>" +
-                            "<span><b>" + item.cantor + "</b> - " + item.titulo + "</span>" +
-                        "</div>" +
-                        "<button onclick=\"window.excluir('" + key + "')\" style='background:#444;'>🗑️</button>" +
-                    "</div>";
-                });
-            } else {
-                fDiv.innerHTML = "<p style='color: var(--subtext);'>A fila está vazia.</p>";
+        // INICIALIZAÇÃO DA API DO YOUTUBE
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('yt-embed', {
+                height: '100%', width: '100%',
+                playerVars: { 'autoplay': 1, 'controls': 1 },
+                events: { 'onStateChange': function(e) {
+                    if (e.data === YT.PlayerState.ENDED && musicaAtualKey) {
+                        db.ref('karaoke/' + tokenGlobal + '/fila/' + musicaAtualKey).remove();
+                    }
+                }}
+            });
+        }
+
+        function abrirModo(modo) {
+            tokenGlobal = document.getElementById('token-input').value.trim().toUpperCase();
+            if (!tokenGlobal) { alert("Digite o Token/Senha da Sala!"); return; }
+
+            document.querySelectorAll('.lbl-token').forEach(el => el.innerText = tokenGlobal);
+            document.getElementById('view-inicio').classList.add('escondido');
+
+            if (modo === 'player') {
+                document.getElementById('view-player').style.display = 'block';
+                iniciarEscutaPlayer();
+            } else if (modo === 'controle') {
+                document.getElementById('view-controle').classList.remove('escondido');
+                iniciarEscutaFila();
+            } else if (modo === 'adm') {
+                document.getElementById('view-adm').classList.remove('escondido');
+                iniciarEscutaFilaADM();
             }
-        });
+        }
 
-        window.buscar = function() {
-            var termo = document.getElementById('busca-termo').value.trim();
-            var rDiv = document.getElementById('resultados');
+        function voltarInicio() {
+            document.getElementById('view-player').style.display = 'none';
+            document.getElementById('view-controle').classList.add('escondido');
+            document.getElementById('view-adm').classList.add('escondido');
+            document.getElementById('view-inicio').classList.remove('escondido');
             
-            if (!termo) return;
-            rDiv.innerHTML = "Buscando...";
+            // Desconecta escutas ativas para evitar consumo de dados em segundo plano
+            db.ref('karaoke/' + tokenGlobal).off();
+            if(player && player.stopVideo) player.stopVideo();
+        }
 
-            var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=" + 
-                encodeURIComponent(termo + " karaoke") + 
-                "&type=video&key=" + ytKeys[keyIndex];
+        // === LÓGICA DO PLAYER (PROJETOR) ===
+        function iniciarEscutaPlayer() {
+            db.ref('karaoke/' + tokenGlobal + '/fila').on('value', function(snapshot) {
+                var fila = snapshot.val();
+                if (fila) {
+                    var chaves = Object.keys(fila);
+                    var proxima = fila[chaves[0]];
+                    document.getElementById('proximo-cantar').innerHTML = "🎤 Cantando: <b>" + proxima.cantor + "</b><br>🎵 " + proxima.titulo;
 
-            fetch(url)
-                .then(function(res) {
-                    if (res.status === 403 || res.status === 429) {
-                        keyIndex = (keyIndex + 1) % ytKeys.length;
-                        throw new Error("quota");
+                    if (!musicaAtualKey || musicaAtualKey !== chaves[0]) {
+                        musicaAtualKey = chaves[0];
+                        if (player && player.loadVideoById) player.loadVideoById(proxima.id);
                     }
-                    return res.json();
-                })
-                .then(function(data) {
-                    if (data.items && data.items.length > 0) {
-                        var resultadosHQ = [];
-                        var resultadosGerais = [];
+                } else {
+                    document.getElementById('proximo-cantar').innerText = "Fila vazia! Adicione músicas pelo celular.";
+                    musicaAtualKey = null;
+                    if (player && player.stopVideo) player.stopVideo();
+                }
+            });
 
-                        data.items.forEach(function(item) {
-                            var canal = (item.snippet.channelTitle || "").toLowerCase();
-                            var ehHQ = listaCanaisHQ.some(function(c) { return canal.includes(c); });
-                            
-                            if (ehHQ) {
-                                resultadosHQ.push(item);
-                            } else {
-                                resultadosGerais.push(item);
-                            }
-                        });
-
-                        // Prioriza os canais HQ no topo
-                        var listaOrdenada = resultadosHQ.concat(resultadosGerais);
-
-                        rDiv.innerHTML = '';
-                        listaOrdenada.forEach(function(item) {
-                            var vId = item.id.videoId;
-                            var tit = item.snippet.title.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                            var canal = item.snippet.channelTitle || "";
-                            
-                            var canalLower = canal.toLowerCase();
-                            var ehHQ = listaCanaisHQ.some(function(c) { return canalLower.includes(c); });
-                            var seloHQ = ehHQ ? " <span class='hq-tag'>⭐ HQ</span>" : "";
-
-                            rDiv.innerHTML += "<div class='track-item'>" +
-                                "<div class='track-info'><span>" + item.snippet.title + "</span>" +
-                                "<span class='channel-tag'>📺 " + canal + seloHQ + "</span></div>" +
-                                "<button onclick=\"window.adicionar('" + vId + "', '" + tit + "')\">➕ Adicionar</button>" +
-                                "</div>";
-                        });
-                    } else {
-                        rDiv.innerHTML = "Nenhum resultado encontrado.";
-                    }
-                })
-                .catch(function(err) {
-                    if (err.message === "quota") {
-                        window.buscar(); // Tenta novamente com a chave reserva
-                    } else {
-                        rDiv.innerHTML = "Erro ao carregar resultados da busca.";
-                    }
-                });
-        };
-
-        window.adicionar = function(id, titulo) {
-            var cantor = document.getElementById('cantor-nome').value.trim();
-            if (!cantor) {
-                alert("Por favor, digite seu nome no campo 'Seu Nome (Cantor)' antes de adicionar uma música!");
-                document.getElementById('cantor-nome').focus();
-                return;
-            }
-            db.ref('karaoke/fila').push({ id: id, titulo: titulo, cantor: cantor });
-        };
-
-        window.excluir = function(key) {
-            db.ref('karaoke/fila/' + key).remove();
-        };
-
-        function pular() {
-            db.ref('karaoke/fila').once('value', function(snapshot) {
-                var data = snapshot.val();
-                if (data) {
-                    var primeiraChave = Object.keys(data)[0];
-                    db.ref('karaoke/fila/' + primeiraChave).remove();
+            db.ref('karaoke/' + tokenGlobal + '/comando').on('value', function(snapshot) {
+                var cmd = snapshot.val();
+                if (player && cmd) {
+                    if (cmd === 'play') player.playVideo();
+                    if (cmd === 'pause') player.pauseVideo();
+                    db.ref('karaoke/' + tokenGlobal + '/comando').remove(); // Consome o comando
                 }
             });
         }
 
-        function comando(cmd) {
-            db.ref('karaoke/comando').set(cmd);
+        // === LÓGICA DE BUSCA E FILA (CONTROLE) ===
+        function buscarYoutube() {
+            var termo = document.getElementById('busca-termo').value.trim();
+            var divRes = document.getElementById('resultados-busca');
+            if (!termo) return;
+            divRes.innerHTML = "<p style='text-align:center;'>Buscando no YouTube...</p>";
+
+            var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=" + 
+                encodeURIComponent(termo + " karaoke") + "&type=video&key=" + ytKeys[keyIndex];
+
+            fetch(url)
+                .then(res => { if (res.status === 403 || res.status === 429) { keyIndex = (keyIndex + 1) % ytKeys.length; throw new Error("quota"); } return res.json(); })
+                .then(data => {
+                    if (!data.items || data.items.length === 0) { divRes.innerHTML = "Nenhum resultado encontrado."; return; }
+                    var hq = [], gerais = [];
+                    data.items.forEach(item => {
+                        var c = (item.snippet.channelTitle || "").toLowerCase();
+                        (canalHQList.some(ch => c.includes(ch)) ? hq : gerais).push(item);
+                    });
+
+                    divRes.innerHTML = '';
+                    hq.concat(gerais).forEach(item => {
+                        var vId = item.id.videoId;
+                        var tit = item.snippet.title.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                        var canal = item.snippet.channelTitle || "";
+                        var ehHQ = canalHQList.some(ch => canal.toLowerCase().includes(ch));
+
+                        divRes.innerHTML += "<div class='track-item'>" +
+                            "<div><b>" + item.snippet.title + "</b><br><small style='color:var(--muted);'>" + canal + (ehHQ ? " ⭐ HQ" : "") + "</small></div>" +
+                            "<button onclick=\"adicionarMusica('" + vId + "', '" + tit + "')\" style='width:auto;'>➕ Pedir</button>" +
+                            "</div>";
+                    });
+                })
+                .catch(err => { if (err.message === "quota") buscarYoutube(); else divRes.innerHTML = "Erro ao buscar vídeos."; });
         }
+
+        function adicionarMusica(id, titulo) {
+            var cantor = document.getElementById('cantor-nome').value.trim();
+            if (!cantor) { alert("Digite seu nome antes de pedir!"); document.getElementById('cantor-nome').focus(); return; }
+            db.ref('karaoke/' + tokenGlobal + '/fila').push({ id: id, titulo: titulo, cantor: cantor });
+            alert("Música adicionada à fila!");
+        }
+
+        function iniciarEscutaFila() {
+            db.ref('karaoke/' + tokenGlobal + '/fila').on('value', function(snapshot) {
+                var divFila = document.getElementById('fila-espera');
+                divFila.innerHTML = '';
+                var data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        var item = data[key];
+                        divFila.innerHTML += "<div class='track-item'>" +
+                            "<span><b>" + item.cantor + "</b> - " + item.titulo + "</span>" +
+                            "</div>";
+                    });
+                } else { divFila.innerHTML = "<p style='color:var(--muted); font-size:14px;'>A fila está vazia.</p>"; }
+            });
+        }
+
+        // === LÓGICA ADM ===
+        function iniciarEscutaFilaADM() {
+            db.ref('karaoke/' + tokenGlobal + '/fila').on('value', function(snapshot) {
+                var divFila = document.getElementById('fila-adm');
+                divFila.innerHTML = '';
+                var data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        var item = data[key];
+                        divFila.innerHTML += "<div class='track-item'>" +
+                            "<span><b>" + item.cantor + "</b> - " + item.titulo + "</span>" +
+                            "<button onclick=\"removerDaFila('" + key + "')\" style='width:auto; background:#444;'>🗑️</button>" +
+                            "</div>";
+                    });
+                } else { divFila.innerHTML = "<p style='color:var(--muted); font-size:14px;'>A fila está vazia.</p>"; }
+            });
+        }
+
+        function removerDaFila(key) { db.ref('karaoke/' + tokenGlobal + '/fila/' + key).remove(); }
+        function pularMusicaAtual() {
+            db.ref('karaoke/' + tokenGlobal + '/fila').once('value', function(snapshot) {
+                var data = snapshot.val();
+                if (data) db.ref('karaoke/' + tokenGlobal + '/fila/' + Object.keys(data)[0]).remove();
+            });
+        }
+        function enviarComando(cmd) { db.ref('karaoke/' + tokenGlobal + '/comando').set(cmd); }
+        function limparFilaToda() { if(confirm("Deseja apagar toda a fila da sala?")) db.ref('karaoke/' + tokenGlobal + '/fila').remove(); }
     </script>
 </body>
 </html>
