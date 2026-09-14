@@ -611,21 +611,35 @@
             });
         };
 
-        // BUSCA ESTRITA (APENAS VÍDEOS DE KARAOKÊ E CANAIS HQ)
+        // BUSCA COM FILTRAGEM DIRETA DE CANAIS HQ NO CÓDIGO
         window.buscar = function() {
             var q = document.getElementById('query').value.trim(); 
             var rDiv = document.getElementById('resultados'); 
             if(!q) return;
-            rDiv.innerHTML = '🔍 Buscando nos canais de alta qualidade...';
+            rDiv.innerHTML = '🔍 Buscando vídeos de karaokê...';
             
-            // Força a presença de "karaoke" no título e remove clipes oficiais
-            var termoTratado = '"' + q + '" intitle:karaoke -official -clip -ao vivo';
+            // Lista de identificadores/nomes dos canais de alta qualidade (em minúsculas)
+            var listaCanaisHQ = [
+                "sfalsin", 
+                "sua voz e violão", 
+                "ponto do karaokê", 
+                "ponto do karaoke", 
+                "karaoke show oficial", 
+                "dom producoes", 
+                "dom produções", 
+                "sing king", 
+                "karafun", 
+                "party tyme", 
+                "cc karaoke", 
+                "obskure", 
+                "caritas"
+            ];
+
+            // Busca ampla focada estritamente em versões de Karaokê
+            var termoTratado = q + ' karaoke -official -clip -ao vivo';
+            var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(termoTratado) + "&type=video&maxResults=25&key=" + getKEY();
             
-            // Busca 1: Prioridade nos Canais HQ
-            var queryHQ = termoTratado + ' (' + canaisHQ + ')';
-            var urlHQ = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryHQ) + "&type=video&maxResults=10&key=" + getKEY();
-            
-            fetch(urlHQ)
+            fetch(url)
                 .then(function(r){ 
                     if (r.status === 403 || r.status === 429) {
                         alternarProximaKey();
@@ -635,28 +649,33 @@
                 })
                 .then(function(data){
                     if(data.items && data.items.length > 0) {
-                        exibirResultados(data.items);
-                    } else {
-                        rDiv.innerHTML = '⚠️ Não encontrado nos canais top. Buscando no YouTube geral...';
-                        
-                        // Busca 2: Geral (Restrita a vídeos de Karaokê)
-                        var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(termoTratado) + "&type=video&maxResults=10&key=" + getKEY();
-                        
-                        return fetch(urlGeral)
-                            .then(function(r2){ 
-                                if (r2.status === 403 || r2.status === 429) {
-                                    alternarProximaKey();
-                                    throw new Error("quota");
-                                }
-                                return r2.json(); 
-                            })
-                            .then(function(dataGeral){
-                                if(dataGeral.items && dataGeral.items.length > 0) {
-                                    exibirResultados(dataGeral.items);
-                                } else {
-                                    rDiv.innerHTML = 'Nenhum karaokê encontrado para este termo.';
-                                }
+                        // 1. Separa os vídeos em dois grupos: Canais HQ vs Outros Canais
+                        var resultadosHQ = [];
+                        var resultadosGerais = [];
+
+                        data.items.forEach(function(item) {
+                            var canalNome = (item.snippet.channelTitle || "").toLowerCase();
+                            
+                            var ehHQ = listaCanaisHQ.some(function(canalTop) {
+                                return canalNome.includes(canalTop);
                             });
+
+                            if (ehHQ) {
+                                resultadosHQ.push(item);
+                            } else {
+                                resultadosGerais.push(item);
+                            }
+                        });
+
+                        // 2. Exibe primeiro os canais HQ. Se não houver, exibe os gerais
+                        if (resultadosHQ.length > 0) {
+                            exibirResultados(resultadosHQ.slice(0, 10));
+                        } else {
+                            rDiv.innerHTML = '<p style="color:#ffeb3b; font-size:12px;">⚠️ Não encontrado nos canais top 11. Exibindo outros canais:</p>';
+                            exibirResultados(resultadosGerais.slice(0, 10));
+                        }
+                    } else {
+                        rDiv.innerHTML = 'Nenhum karaokê encontrado para este termo.';
                     }
                 })
                 .catch(function(err){
@@ -670,7 +689,9 @@
 
         function exibirResultados(items) {
             var rDiv = document.getElementById('resultados');
-            rDiv.innerHTML = '';
+            if (rDiv.innerHTML.indexOf('⚠️') === -1) {
+                rDiv.innerHTML = '';
+            }
             items.forEach(function(i){
                 var tSeguro = i.snippet.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
                 rDiv.innerHTML += "<div class='track-item'><div><span>" + i.snippet.title + "</span><span class='channel-tag'>📺 " + i.snippet.channelTitle + "</span></div><button onclick=\"window.add('" + i.id.videoId + "','" + tSeguro + "')\">+</button></div>";
