@@ -12,21 +12,49 @@
         #screen-tv { width: 100vw; height: 100vh; background: #000; position: fixed; top: 0; left: 0; }
         #player-container, iframe { width: 100%; height: 100%; border: none; }
         input { padding: 12px; border: none; border-radius: 5px; font-size: 16px; width: 80%; max-width: 400px; background: #222; color: #fff; text-align: center; }
-        .info-box { background: #111; border: 1px solid #e50914; padding: 10px; border-radius: 8px; margin: 10px auto; max-width: 450px; text-align: left; font-size: 12px; color: #ccc; }
-        .track-item { padding: 10px; background: #222; margin: 5px auto; border-radius: 5px; max-width: 450px; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .info-box { background: #111; border: 1px solid #e50914; padding: 10px; border-radius: 8px; margin: 10px auto; max-width: 90%; text-align: left; font-size: 12px; color: #ccc; }
+        .track-item { padding: 10px; background: #222; margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; text-align: left; gap: 10px; }
+        .track-info { flex: 1; min-width: 0; }
+        .track-controls { display: flex; gap: 4px; align-items: center; }
+        .btn-order { background: #333; color: #fff; padding: 6px 10px; font-size: 12px; border-radius: 5px; margin: 0; }
+        .btn-order:hover { background: #555; }
         .channel-tag { font-size: 11px; color: #e50914; display: block; }
         .cantor-tag { font-size: 12px; color: #00ffcc; font-weight: bold; display: block; margin-top: 3px; }
         
+        /* Layout em Duas Colunas para o Controle Remoto */
+        .remote-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 20px auto 0 auto;
+            text-align: left;
+        }
+        .remote-col {
+            flex: 1;
+            background: #111;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+        .remote-col h3 {
+            margin-top: 0;
+            color: #e50914;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
         /* Token Badge na TV */
         #token-tv-badge {
-            position: absolute; top: 15px; left: 15px; z-index: 10000;
+            position: absolute; top: 15px; left: 15px; z-index: 100000;
             background: rgba(0,0,0,0.85); border: 1px solid #e50914; padding: 8px 15px;
             border-radius: 20px; font-size: 14px; color: #00ffcc; font-weight: bold;
         }
 
         /* Marca D'água do Próximo Cantor na TV */
         #proximo-cantor-watermark {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 20000;
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 100000;
             background: rgba(0, 0, 0, 0.85); color: rgba(255, 255, 255, 0.95);
             padding: 12px 30px; border-radius: 30px; font-size: 26px; font-weight: bold;
             border: 2px solid rgba(0, 255, 204, 0.8); display: none; text-shadow: 0 0 10px #000;
@@ -38,16 +66,23 @@
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
             background: rgba(0,0,0,0.95); color: #00ffcc; 
             display: none; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 30000; padding: 20px; box-sizing: border-box;
+            z-index: 200000; padding: 20px; box-sizing: border-box;
         }
         #placar-overlay h1 { font-size: 48px; margin-bottom: 10px; color: #fff; }
         #placar-overlay .score { font-size: 96px; font-weight: bold; text-shadow: 0 0 20px #00ffcc; margin: 0; }
         #frase-val { font-size: 28px; color: #ffeb3b; margin-top: 15px; font-weight: bold; text-shadow: 0 0 10px rgba(255,235,59,0.5); }
         
-        #btn-mic { position: absolute; bottom: 20px; right: 20px; z-index: 10000; opacity: 0.8; }
-        #btn-fullscreen { position: absolute; bottom: 20px; left: 20px; z-index: 10000; opacity: 0.8; background: #007bff; }
+        /* BOTÕES SOBREPOSTOS NA TV */
+        #btn-mic { 
+            position: absolute; bottom: 20px; right: 20px; z-index: 100000; opacity: 0.9;
+            background: #e50914; color: #fff; padding: 12px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer;
+        }
+        #btn-fullscreen { 
+            position: absolute; bottom: 20px; left: 20px; z-index: 100000; opacity: 0.9;
+            background: #007bff; color: #fff; padding: 12px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer;
+        }
 
-        /* GARANTIA PARA TELA CHEIA NATIVA */
+        /* TELA CHEIA NATIVA */
         #screen-tv:fullscreen #proximo-cantor-watermark,
         #screen-tv:-webkit-full-screen #proximo-cantor-watermark { display: block; z-index: 2147483647 !important; }
 
@@ -56,9 +91,19 @@
 
         #screen-tv:fullscreen #placar-overlay,
         #screen-tv:-webkit-full-screen #placar-overlay { z-index: 2147483647 !important; }
+
+        #screen-tv:fullscreen #btn-fullscreen,
+        #screen-tv:-webkit-full-screen #btn-fullscreen { z-index: 2147483647 !important; }
+
+        #screen-tv:fullscreen #btn-mic,
+        #screen-tv:-webkit-full-screen #btn-mic { z-index: 2147483647 !important; }
         
         .admin-card { background: #181818; border: 1px solid #333; padding: 20px; border-radius: 10px; max-width: 400px; margin: 20px auto; }
         .token-display { font-size: 36px; font-weight: bold; color: #00ffcc; letter-spacing: 4px; margin: 15px 0; }
+
+        @media (max-width: 768px) {
+            .remote-layout { flex-direction: column; }
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -100,23 +145,33 @@
     <div id="screen-remote" class="screen">
         <h2>📱 Controle - Karaokê do Lê</h2>
         <div class="info-box">
-            <strong>⭐ Canais Recomendados:</strong> Sfalsin, Sua Voz e Violão, Ponto do Karaokê 2, CC Karaoke, Sing King, KaraFun, Party Tyme, ObsKure, Funbox, Caritas, The Proper Volume, Scream Queen.
+            <strong>⭐ Canais Prioritários HQ:</strong> Sfalsin, Sua Voz e Violão, Ponto do Karaokê (1, 2 e 3), Karaoke Show Oficial, Dom Producoes, Sing King, KaraFun, Party Tyme, CC Karaoke, ObsKure, Caritas.
         </div>
         
-        <input type="text" id="cantor-nome" placeholder="👤 Seu Nome (Cantor)" style="border: 1px solid #e50914; margin-bottom: 10px;"><br>
-        <input type="text" id="query" placeholder="Música ou artista..."><br>
-        <button onclick="buscar()">Pesquisar</button>
-        <button style="background:#555;" onclick="comando('play')">▶️</button>
-        <button style="background:#555;" onclick="comando('pause')">⏸️</button>
-        <button onclick="comando('proxima')">⏭️ Pular</button>
-        <h3>Resultados da Busca</h3>
-        <div id="resultados"></div>
-        <hr>
-        <h3>Fila Atual</h3>
-        <div id="fila"></div>
+        <div style="margin: 15px 0;">
+            <input type="text" id="cantor-nome" placeholder="👤 Seu Nome (Cantor)" style="border: 1px solid #e50914; margin-bottom: 10px;"><br>
+            <input type="text" id="query" placeholder="Música ou artista..."><br>
+            <button onclick="buscar()">Pesquisar</button>
+            <button style="background:#555;" onclick="comando('play')">▶️</button>
+            <button style="background:#555;" onclick="comando('pause')">⏸️</button>
+            <button onclick="comando('proxima')">⏭️ Pular</button>
+        </div>
+
+        <!-- Layout de Colunas Paralelas -->
+        <div class="remote-layout">
+            <div class="remote-col">
+                <h3>🔍 Resultados da Busca</h3>
+                <div id="resultados">Digite uma música acima para buscar.</div>
+            </div>
+            
+            <div class="remote-col">
+                <h3>📋 Fila de Reprodução</h3>
+                <div id="fila">A fila está vazia no momento.</div>
+            </div>
+        </div>
     </div>
 
-    <!-- Painel do Administrador (Lê) -->
+    <!-- Painel do Administrador -->
     <div id="screen-admin" class="screen">
         <h2>🔑 Gerenciador de Token</h2>
         <div class="admin-card">
@@ -145,9 +200,26 @@
         firebase.initializeApp(config);
         var db = firebase.database();
         
-        var KEY = 'AIzaSyDhjvGcAUY7UrD2pgbvvJX00Ud_3x7mDsc';
+        // === ROTAÇÃO AUTOMÁTICA DE CHAVES DA API DO YOUTUBE ===
+        var listaKeys = [
+            'AIzaSyDhjvGcAUY7UrD2pgbvvJX00Ud_3x7mDsc', // Chave Principal
+            'AIzaSyBcxifY9EN9XfKPUq_tNobFdMDOKejrt5o'  // Chave Reserva
+        ];
+        var keyIndex = 0;
+
+        function getKEY() {
+            return listaKeys[keyIndex];
+        }
+
+        function alternarProximaKey() {
+            if (listaKeys.length > 1) {
+                keyIndex = (keyIndex + 1) % listaKeys.length;
+                console.warn("⚠️ Cota da chave atingida/erro! Alternando para a chave reserva nº: " + (keyIndex + 1));
+            }
+        }
+
         var player, filaIds = [], atualId = null;
-        var tentandoFallback = false;
+        var nivelFallback = 0; // 0: Original, 1: HQ, 2: Geral
         var exibindoPlacar = false;
         var senhaCadastrada = "1234";
 
@@ -155,6 +227,8 @@
         var pontuacaoAcumulada = 0, amostrasAudio = 0, totalLeituras = 0;
         var analisandoAudio = false;
         var timerProgresso = null;
+
+        var canaisHQ = "sfalsin OR 'sua voz e violao' OR 'ponto do karaoke' OR 'ponto do karaoke 2' OR 'ponto do karaoke 3' OR 'karaoke show oficial' OR 'dom producoes' OR 'sing king' OR karafun OR 'party tyme' OR 'cc karaoke' OR obskure OR caritas";
 
         window.addEventListener('DOMContentLoaded', function() {
             var urlParams = new URLSearchParams(window.location.search);
@@ -388,7 +462,7 @@
                 var data = s.val(); 
                 if(!data) { 
                     atualId = null; 
-                    tentandoFallback = false;
+                    nivelFallback = 0;
                     esconderMarcaDagua();
                     if(player && player.stopVideo) player.stopVideo(); 
                     return; 
@@ -400,7 +474,7 @@
 
                 if(filaIds.length > 0 && player && player.loadVideoById && atualId !== filaIds[0].id) {
                     atualId = filaIds[0].id; 
-                    tentandoFallback = false;
+                    nivelFallback = 0;
                     esconderMarcaDagua();
                     player.loadVideoById(atualId);
                 }
@@ -416,20 +490,51 @@
             });
         };
 
+        // TRATAMENTO DE ERRO COM FALLBACK DE 3 NÍVEIS
         function tratarErroReproducao() {
             if (filaIds.length === 0) return;
             var itemAtual = filaIds[0];
-            
-            if (!tentandoFallback && itemAtual && itemAtual.titulo) {
-                tentandoFallback = true;
-                
-                var termoBusca = itemAtual.titulo.replace(/karaoke/gi, "").trim();
-                var queryEstudio = termoBusca + " studio backing track OR sfalsin OR 'ponto do karaoke' OR 'sing king' -midi";
-                
-                var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryEstudio) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + KEY;
-                
-                fetch(url)
-                    .then(function(r){ return r.json(); })
+            if (!itemAtual || !itemAtual.titulo) { pular(); return; }
+
+            var termoLimpo = itemAtual.titulo.replace(/karaoke/gi, "").trim();
+
+            if (nivelFallback === 0) {
+                nivelFallback = 1;
+                var queryHQ = termoLimpo + " karaoke (" + canaisHQ + ")";
+                var urlHQ = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryHQ) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + getKEY();
+
+                fetch(urlHQ)
+                    .then(function(r){ 
+                        if (r.status === 403 || r.status === 429) {
+                            alternarProximaKey();
+                        }
+                        return r.json(); 
+                    })
+                    .then(function(data){
+                        if (data.items && data.items.length > 0) {
+                            var novoId = data.items[0].id.videoId;
+                            if (novoId !== atualId) {
+                                atualId = novoId;
+                                player.loadVideoById(novoId);
+                                return;
+                            }
+                        }
+                        tratarErroReproducao();
+                    })
+                    .catch(function(){ tratarErroReproducao(); });
+
+            } else if (nivelFallback === 1) {
+                nivelFallback = 2;
+                var queryGeral = termoLimpo + " karaoke";
+                var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryGeral) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + getKEY();
+
+                fetch(urlGeral)
+                    .then(function(r){ 
+                        if (r.status === 403 || r.status === 429) {
+                            alternarProximaKey();
+                        }
+                        return r.json(); 
+                    })
                     .then(function(data){
                         if (data.items && data.items.length > 0) {
                             var novoId = data.items[0].id.videoId;
@@ -442,6 +547,7 @@
                         pular();
                     })
                     .catch(function(){ pular(); });
+
             } else {
                 pular();
             }
@@ -453,45 +559,135 @@
                 var d = s.val(); 
                 var fDiv = document.getElementById('fila'); 
                 fDiv.innerHTML = ''; 
-                if(!d) return;
+                if(!d) {
+                    fDiv.innerHTML = 'A fila está vazia no momento.';
+                    return;
+                }
 
+                var lista = [];
                 Object.keys(d).forEach(function(k){
-                    var cantorStr = d[k].cantor ? "👤 " + d[k].cantor : "👤 Não informado";
-                    fDiv.innerHTML += "<div class='track-item'><div><span>" + d[k].titulo + "</span><span class='cantor-tag'>" + cantorStr + "</span></div><button style='background:#555;' onclick=\"window.excluir('" + k + "')\">🗑️</button></div>";
+                    lista.push({ key: k, val: d[k] });
+                });
+
+                lista.forEach(function(item, idx){
+                    var cantorStr = item.val.cantor ? "👤 " + item.val.cantor : "👤 Não informado";
+                    
+                    var btnSubir = idx > 0 ? "<button class='btn-order' onclick=\"window.moverFila(" + idx + ", -1)\">⬆️</button>" : "";
+                    var btnDescer = idx < lista.length - 1 ? "<button class='btn-order' onclick=\"window.moverFila(" + idx + ", 1)\">⬇️</button>" : "";
+                    
+                    fDiv.innerHTML += "<div class='track-item'>" +
+                        "<div class='track-info'><span>" + item.val.titulo + "</span><span class='cantor-tag'>" + cantorStr + "</span></div>" +
+                        "<div class='track-controls'>" + btnSubir + btnDescer +
+                        "<button style='background:#555;' onclick=\"window.excluir('" + item.key + "')\">🗑️</button></div>" +
+                        "</div>";
                 });
             });
         };
 
+        // REORDENAR ELEMENTOS DA FILA NO FIREBASE
+        window.moverFila = function(indexOrigem, direcao) {
+            db.ref('karaoke/fila').once('value', function(snapshot) {
+                var data = snapshot.val();
+                if (!data) return;
+
+                var lista = [];
+                Object.keys(data).forEach(function(k){
+                    lista.push({ key: k, val: data[k] });
+                });
+
+                var indexDestino = indexOrigem + direcao;
+                if (indexDestino < 0 || indexDestino >= lista.length) return;
+
+                var temp = lista[indexOrigem];
+                lista[indexOrigem] = lista[indexDestino];
+                lista[indexDestino] = temp;
+
+                var novaFilaObjeto = {};
+                lista.forEach(function(item){
+                    novaFilaObjeto[item.key] = item.val;
+                });
+
+                db.ref('karaoke/fila').set(novaFilaObjeto);
+            });
+        };
+
+        // BUSCA NO CELULAR/CONTROLE COM SUPORTE A ROTAÇÃO DE CHAVE
         window.buscar = function() {
-            var q = document.getElementById('query').value; 
+            var q = document.getElementById('query').value.trim(); 
             var rDiv = document.getElementById('resultados'); 
             if(!q) return;
-            rDiv.innerHTML = 'Buscando...';
+            rDiv.innerHTML = '🔍 Buscando nos canais de alta qualidade...';
             
-            var url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(q + ' karaoke') + "&type=video&maxResults=10&key=" + KEY;
+            var queryHQ = q + " karaoke (" + canaisHQ + ")";
+            var urlHQ = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryHQ) + "&type=video&maxResults=10&key=" + getKEY();
             
-            fetch(url)
-                .then(function(r){ return r.json(); })
-                .then(function(data){
-                    rDiv.innerHTML = '';
-                    if(!data.items || data.items.length === 0) {
-                        rDiv.innerHTML = 'Nenhum resultado encontrado ou cota excedida.';
-                        return;
+            fetch(urlHQ)
+                .then(function(r){ 
+                    if (r.status === 403 || r.status === 429) {
+                        alternarProximaKey();
+                        throw new Error("quota");
                     }
-                    data.items.forEach(function(i){
-                        var tSeguro = i.snippet.title.replace(/'/g, "").replace(/"/g, "");
-                        rDiv.innerHTML += "<div class='track-item'><div><span>" + i.snippet.title + "</span><span class='channel-tag'>📺 " + i.snippet.channelTitle + "</span></div><button onclick=\"window.add('" + i.id.videoId + "','" + tSeguro + "')\">+</button></div>";
-                    });
+                    return r.json(); 
                 })
-                .catch(function(){
-                    rDiv.innerHTML = 'Erro ao realizar a busca.';
+                .then(function(data){
+                    if(data.items && data.items.length > 0) {
+                        exibirResultados(data.items);
+                    } else {
+                        rDiv.innerHTML = '⚠️ Não encontrado nos canais top. Buscando no YouTube geral...';
+                        var queryGeral = q + " karaoke";
+                        var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryGeral) + "&type=video&maxResults=10&key=" + getKEY();
+                        
+                        return fetch(urlGeral)
+                            .then(function(r2){ 
+                                if (r2.status === 403 || r2.status === 429) {
+                                    alternarProximaKey();
+                                    throw new Error("quota");
+                                }
+                                return r2.json(); 
+                            })
+                            .then(function(dataGeral){
+                                if(dataGeral.items && dataGeral.items.length > 0) {
+                                    exibirResultados(dataGeral.items);
+                                } else {
+                                    rDiv.innerHTML = 'Nenhum resultado encontrado.';
+                                }
+                            });
+                    }
+                })
+                .catch(function(err){
+                    if (err.message === "quota") {
+                        window.buscar();
+                    } else {
+                        rDiv.innerHTML = 'Erro ao realizar a busca. Tente novamente.';
+                    }
                 });
         };
 
+        function exibirResultados(items) {
+            var rDiv = document.getElementById('resultados');
+            rDiv.innerHTML = '';
+            items.forEach(function(i){
+                var tSeguro = i.snippet.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                rDiv.innerHTML += "<div class='track-item'><div><span>" + i.snippet.title + "</span><span class='channel-tag'>📺 " + i.snippet.channelTitle + "</span></div><button onclick=\"window.add('" + i.id.videoId + "','" + tSeguro + "')\">+</button></div>";
+            });
+        }
+
+        // ADICIONAR COM CONFIRMAÇÃO DE STATUS NO CELULAR
         window.add = function(id, titulo) { 
             var nomeInput = document.getElementById('cantor-nome').value.trim();
             var nomeCantor = nomeInput !== "" ? nomeInput : "Anônimo";
-            db.ref('karaoke/fila').push({ id: id, titulo: titulo, cantor: nomeCantor }); 
+            
+            db.ref('karaoke/fila').push({ 
+                id: id, 
+                titulo: titulo, 
+                cantor: nomeCantor 
+            }, function(error) {
+                if (error) {
+                    alert("❌ Erro ao adicionar à fila. Verifique a conexão com a internet!");
+                } else {
+                    alert("✅ '" + titulo + "' foi adicionada à fila!");
+                }
+            }); 
         };
 
         window.comando = function(t) { 
@@ -503,7 +699,7 @@
         };
 
         function pular() { 
-            tentandoFallback = false;
+            nivelFallback = 0;
             esconderMarcaDagua();
             if(filaIds.length > 0) { 
                 db.ref('karaoke/fila/' + filaIds[0].k).remove(); 
