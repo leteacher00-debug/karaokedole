@@ -500,7 +500,7 @@
 
             if (nivelFallback === 0) {
                 nivelFallback = 1;
-                var queryHQ = termoLimpo + " karaoke (" + canaisHQ + ")";
+                var queryHQ = '"' + termoLimpo + '" intitle:karaoke -official -clip (' + canaisHQ + ')';
                 var urlHQ = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryHQ) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + getKEY();
 
                 fetch(urlHQ)
@@ -525,7 +525,7 @@
 
             } else if (nivelFallback === 1) {
                 nivelFallback = 2;
-                var queryGeral = termoLimpo + " karaoke";
+                var queryGeral = '"' + termoLimpo + '" intitle:karaoke -official -clip';
                 var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryGeral) + "&type=video&videoEmbeddable=true&maxResults=1&key=" + getKEY();
 
                 fetch(urlGeral)
@@ -611,14 +611,18 @@
             });
         };
 
-        // BUSCA NO CELULAR/CONTROLE COM SUPORTE A ROTAÇÃO DE CHAVE
+        // BUSCA ESTRITA (APENAS VÍDEOS DE KARAOKÊ E CANAIS HQ)
         window.buscar = function() {
             var q = document.getElementById('query').value.trim(); 
             var rDiv = document.getElementById('resultados'); 
             if(!q) return;
             rDiv.innerHTML = '🔍 Buscando nos canais de alta qualidade...';
             
-            var queryHQ = q + " karaoke (" + canaisHQ + ")";
+            // Força a presença de "karaoke" no título e remove clipes oficiais
+            var termoTratado = '"' + q + '" intitle:karaoke -official -clip -ao vivo';
+            
+            // Busca 1: Prioridade nos Canais HQ
+            var queryHQ = termoTratado + ' (' + canaisHQ + ')';
             var urlHQ = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryHQ) + "&type=video&maxResults=10&key=" + getKEY();
             
             fetch(urlHQ)
@@ -634,8 +638,9 @@
                         exibirResultados(data.items);
                     } else {
                         rDiv.innerHTML = '⚠️ Não encontrado nos canais top. Buscando no YouTube geral...';
-                        var queryGeral = q + " karaoke";
-                        var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(queryGeral) + "&type=video&maxResults=10&key=" + getKEY();
+                        
+                        // Busca 2: Geral (Restrita a vídeos de Karaokê)
+                        var urlGeral = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(termoTratado) + "&type=video&maxResults=10&key=" + getKEY();
                         
                         return fetch(urlGeral)
                             .then(function(r2){ 
@@ -649,7 +654,7 @@
                                 if(dataGeral.items && dataGeral.items.length > 0) {
                                     exibirResultados(dataGeral.items);
                                 } else {
-                                    rDiv.innerHTML = 'Nenhum resultado encontrado.';
+                                    rDiv.innerHTML = 'Nenhum karaokê encontrado para este termo.';
                                 }
                             });
                     }
